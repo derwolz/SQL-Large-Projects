@@ -5,15 +5,6 @@ USE Libraries
 --- Check to see if each table exists, Creating and replacing for the database---
 ---------------------------------------------------------------------------------*/
 
-Alter TABLE BOOKS nocheck constraint all
-Alter TABLE Library_Branch nocheck constraint all
-Alter TABLE Publisher nocheck constraint all
-Alter TABLE Borrower nocheck constraint all
-Alter TABLE Book_Authors nocheck constraint all
-Alter TABLE Book_Loan nocheck constraint all
-Alter TABLE Book_Copies nocheck constraint all
-
-
 DROP TABLE Library_Branch 
 DROP TABLE Book_Loans
 DROP TABLE Books
@@ -30,7 +21,7 @@ DROP TABLE Book_Copies
 	INSERT INTO Library_Branch 
 	(BranchName, Address)
 	VALUES
-	('Shapstown', '55 cherry Lane,Shapstown Utah'),
+	('Sharpstown', '55 cherry Lane,Shapstown Utah'),
 	('Central','10 Center St, Portland Oregon'),
 	('Murray','2100 Mortimer Lane, Oregon'),
 	('Eugene','43 E Bookgiver Ave, Oregon')
@@ -192,9 +183,6 @@ INSERT INTO Book_Copies
 	(19,1,3),(19,2,3),(19,3,3),(19,4,3),
 	(20,1,3),(20,2,3),(20,3,3),(20,4,3)
 ;
-/*----------------------------------------------------------------------
------------------------Table Inserts------------------------------------
-----------------------------------------------------------------------*/
 
 
 
@@ -207,18 +195,53 @@ INSERT INTO Book_Copies
 -----------------------------------------------------------------------------*/
 
 CREATE PROCEDURE dbo.GetLastTribeinSharpstown
-
+AS
+SELECT a1.Number_Of_Copies FROM Book_Copies a1 
+	INNER JOIN Books a2 ON a2.BookID = a1.BookID
+	INNER JOIN Library_Branch a3 ON a3.BranchID = a1.BranchID
+WHERE a2.Title = 'The Lost Tribe' AND a3.BranchName = 'Sharpstown'
+GO
 
 CREATE PROCEDURE dbo.FindLostTribe
-
-
+AS
+	SELECT a1.Number_Of_Copies FROM Book_Copies a1 
+	INNER JOIN Books a2 ON a2.BookID = a1.BookID
+	INNER JOIN Library_Branch a3 ON a3.BranchID = a1.BranchID
+	WHERE a2.Title = 'The Lost Tribe'
+GO
 CREATE PROCEDURE dbo.ReturnIdleBorrower
-
+AS
+	SELECT Name FROM Borrower WHERE CardNo NOT IN (SELECT CardNo FROM Book_Loans );
+GO
 CREATE PROCEDURE dbo.SharpstownGetPastDue
+AS
+	SELECT a3.Title, a2.Name, a2.Address From Book_Loans a1
+	INNER JOIN Books a3 ON a3.BookID = a1.BookID
+	INNER JOIN Borrower a2 ON a2.CardNo = a1.CardNo
+	INNER JOIN Library_Branch a4 ON a4.BranchID = a1.BranchID
+	WHERE a1.DateOut = GETDATE()
+GO
+	
 
 CREATE PROCEDURE dbo.GetLoanedBooksByBranch
-
+AS
+Select COUNT(a1.BookID) AS 'Loaned Books', a2.BranchName FROM Book_Loans a1 
+	INNER JOIN Library_Branch a2 ON a2.BranchID = a1.BranchID
+	 Group BY a2.BranchName
+GO
 CREATE PROCEDURE dbo.ReturnVIPBorrower
+AS
+SELECT	a1.Name FROM Borrower a1, Book_Loans a2
+WHERE a1.CardNo = a2.CardNo
+GROUP BY a1.Name
+Having COUNT(*)>5;
+GO
 
 CREATE PROCEDURE dbo.ReturnCentralStephenKingBooks
-
+AS
+SELECT a1.Number_of_Copies, a2.title FROM Book_Copies a1
+	INNER JOIN Books a2 ON a2.BookID = a1.BookID
+	INNER JOIN Library_Branch a3 ON a3.BranchID = a1.BranchID
+	Inner JOIN Book_Authors a4 ON a4.BookID = a1.BookID
+	WHERE a4.AuthorName = 'stephen king' AND a3.BranchName = 'Central'
+GO
